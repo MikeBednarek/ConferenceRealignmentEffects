@@ -1,0 +1,352 @@
+---
+title: "DA401"
+author: "Michael Bednarek"
+date: "2023-10-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#load packages 
+
+
+library(readxl)
+library(readr)
+library(tidyverse)
+```
+
+
+
+```{r}
+#Set working directory to folder with all the Excel files
+setwd("/Users/michaelbednarek/DA401\ Data")
+#Get a list of the the excel files in the folders
+file_list2 <- list.files(pattern = "*.xls")
+```
+
+```{r}
+#create an empty list to story data frames
+data_list2 <- list()
+```
+
+```{r}
+#Loop through the list of files and read each excel file
+for (file in file_list2) {
+  data2 <- read_excel(file)
+  data_list2 <- c(data_list2, list(data2))
+}
+#Combine the excel files together into one data frame
+combined_data3 <- bind_rows(data_list2)
+```
+
+```{r}
+#save the dataframe as a csv
+write.csv(combined_data3, "/Users/michaelbednarek/DA401\ Data\fbs_data.csv", row.names = FALSE)
+```
+
+```{r}
+#find the correlation between the revenues and expenses
+correlation <- cor(combined_data3$`Total Expenses`, combined_data3$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient bettwen total revenues and total expenses:", correlation, "\n")
+```
+```{r}
+#correlation is not running because of missing values checked to see how many missing values there are
+sum(is.na(combined_data3$`Total Expenses`))
+sum(is.na(combined_data3$`Total Revenues`))
+
+```
+```{r}
+#clean the data to omit the four rows that are blank
+#Using na.omit here took out all the data for 2022 for every school because schools don't have the total academic spending for 2022 available yet so i am going to delete that column since it's not really relevant for what I'm looking for and causing issues with analysis
+#fbs_data <- na.omit(combined_data2)
+combined_data3$`Total Academic Spending (University-Wide)`<- NULL
+#now I can use na.omit to get rid rows with NA values since the data can't be found elsewhere and the values aren't meant to be zeros either
+fbs_data2 <- na.omit(combined_data3)
+#began running some correlation coefficents to see what variables affect revenue and expenses
+correlation1 <- cor(fbs_data2$`Total Expenses`, fbs_data2$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient bettwen total revenues and total expenses:", correlation1, "\n")
+
+```
+
+```{r}
+summary(fbs_data2$`Athletics Related Debt`)
+
+```
+```{r}
+#wanted to create a categorical variable for debt levels among schools to possibly run some analysis to see if that affects revenues
+
+fbs_data2$DebtLevels <- cut(fbs_data2$`Athletics Related Debt`,
+                           breaks = c(0, 47688420, 88725616, 107587278, 150367675, 445020000),
+                           labels = c('Low', 'LowMedium', 'Medium', 'MediumHigh', 'High'))
+
+```
+
+
+```{r}
+#needed to create a new column to group the schools into their new conference that begin next year 
+
+acc_schools <- c("Clemson University", "Florida State University", "Georgia Institute of Technology", "North Carolina State University at Raleigh", "University of California-Berkeley", "University of Louisville", "University of North Carolina at Chapel Hill", "University of Virginia", "Virginia Polytechnic Institute and State University")
+
+big10_schools <- c("Indiana University-Bloomington", "Michigan State University", "Pennsylvania State University", "Purdue University", "Rutgers, The State University of New Jersey-New Brunswick", "The Ohio State University", "University of California-Los Angeles", "University of Illinois Urbana-Champaign", "University of Iowa", "University of Maryland-College Park", "University of Michigan", "University of Minnesota-Twin Cities", "University of Nebraska-Lincoln", "University of Oregon", "University of Washington", "University of Wisconsin-Madison")
+
+big12_schools <- c("Arizona State University", "Iowa State University", "Kansas State University", "Oklahoma State University", "Texas Tech University", "University of Arizona", "University of Central Florida", "University of Cincinnati", "University of Colorado Boulder", "University of Houston", "University of Kansas", "University of Utah", "West Virginia University")
+
+pac12_schools <- c("Oregon State University", "Washington State University")
+
+sec_schools <- c("Auburn University", "Louisiana State University and Agricultural & Mechanical College", "Mississippi State University", "Texas A & M University", "The University of Alabama", "The University of Tennessee", "The University of Texas at Austin", "University of Arkansas", "University of Florida", "University of Georgia", "University of Kentucky", "University of Mississippi", "University of Missouri-Columbia", "University of Oklahoma", "University of South Carolina")
+
+fbs_data2 <- fbs_data2 |> 
+  mutate(NewConference = case_when(
+  Data %in% acc_schools ~ "ACC",
+  Data %in% big10_schools ~ "Big Ten", 
+  Data %in% big12_schools ~ "Big 12",
+  Data %in% pac12_schools ~ "Pac 12", 
+  Data %in% sec_schools ~ "SEC",
+  TRUE ~ "Other"
+))
+```
+
+```{r}
+#create a linear regression for a key variable that is going to increase at a very quick rate that should have a large affect on the total expenses
+TravelTotal = lm(formula = `Total Expenses` ~ `Game Expenses and Travel`, data = fbs_data2)
+summary(TravelTotal)
+```
+
+```{r}
+#create a scatterplot with the two variables above with the linear regression line plotted as well
+plot (fbs_data2$`Game Expenses and Travel`, fbs_data2$`Total Expenses`, main = "Travel and Game Expenses vs Total Expenses", xlab = "Game Expenses and Travel", ylab = "Total Expenses")
+abline(TravelTotal, col = "blue")
+```
+
+```{r}
+#linear regression to see if there is a relationship between spending on travel and revenue
+Prep = lm(formula = `Total Revenues` ~ `Game Expenses and Travel`, data = fbs_data2)
+summary(Prep)
+```
+```{r}
+#create a scatterplot with the two variables above with the linear regression line plotted as well
+plot (fbs_data2$`Game Expenses and Travel`, fbs_data2$`Total Revenues`, main = "Travel and Game Expenses vs Total Revenues", xlab = "Game Expenses and Travel", ylab = "Total Revenues")
+abline(TravelTotal, col = "blue")
+```
+
+```{r}
+#began running some correlation coefficents to see what variables affect revenue and expense
+correlation2 <- cor(fbs_data2$`Total Revenues`, fbs_data2$`Athletics Related Debt`)
+#Print the result
+cat("Correlation coefficient between Total Revenues and Athletic Department Debt:", correlation2, "\n")
+```
+
+```{r}
+correlation3 <- cor(fbs_data2$`Total Expenses`, fbs_data2$`Total Football Spending`)
+#Print the result
+cat("Correlation coefficient bettwen Total Expenses and football related spending:", correlation3, "\n")
+```
+
+```{r}
+correlation4 <- cor(fbs_data2$`Total Football Spending`, fbs_data2$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient bettwen total revenues and football related spending:", correlation4, "\n")
+```
+
+```{r}
+correlation5 <- cor(fbs_data2$`Athletics Related Debt`, fbs_data2$`Total Expenses`)
+#Print the result
+cat("Correlation coefficient between Total Expenses and debt:", correlation5, "\n")
+```
+
+```{r}
+correlation6 <- cor(fbs_data2$`Facilities and Equipment`, fbs_data2$`Athletics Related Debt`)
+#Print the result
+cat("Correlation coefficient between facilites and debt:", correlation6, "\n")
+```
+
+```{r}
+correlation7 <- cor(fbs_data2$`Total Expenses`, fbs_data2$`Game Expenses and Travel`)
+#Print the result
+cat("Correlation coefficient between Total Expenses and Travel Expenses:", correlation7, "\n")
+```
+
+```{r}
+correlation8 <- cor(fbs_data2$`Total Football Coaching Salaries`, fbs_data2$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient between total revenues and football coaches salaries:", correlation8, "\n")
+```
+
+```{r}
+correlation9 <- cor(fbs_data2$`Total Football Coaching Salaries`, fbs_data2$`Donor Contributions`)
+#Print the result
+cat("Correlation coefficient between donations and football coaches salaries:", correlation9, "\n")
+```
+
+```{r}
+correlation10 <- cor(fbs_data2$`Total Football Coaching Salaries`, fbs_data2$`Athletics Related Debt`)
+#Print the result
+cat("Correlation coefficient between debt and football coaches salaries:", correlation10, "\n")
+```
+
+```{r}
+plot(fbs_data2$`Total Revenues`[fbs_data2$Year == 2022], fbs_data2$`Total Football Coaching Salaries`[fbs_data2$Year == 2022],
+     main = "Total Revenues vs Football Coaching Salaries 2022",
+     xlab = "Total Revenue", ylab = "Coaches Salaries")
+```
+
+```{r}
+#some more correlations
+correlation11 <- cor(fbs_data2$`Institutional/Government Support`, fbs_data2$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient between total revenues and government support:", correlation11, "\n")
+```
+
+
+```{r}
+correlation12 <- cor(fbs_data2$`Total Football Spending`, fbs_data2$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient between total revenues and football spending:", correlation12, "\n")
+```
+```{r}
+correlation13 <- cor(fbs_data2$`NCAA/Conference Distributions, Media Rights, and Post-Season Football`, fbs_data2$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient between total revenues and Media Rights:", correlation13, "\n")
+```
+
+```{r}
+#This graph was all messed up, might come back to it, but just commenting it out for now
+
+#ggplot(fbs_data, aes(x = Data)) +
+  #geom_bar(aes(y = `Total Expenses`, fill = "Total Expenses"), stat = "identity", position = "dodge", width = 0.8) + 
+  #geom_bar(aes(y = `NCAA/Conference Distributions, Media Rights, and Post-Season Football`, fill = "NCAA/Conference Distributions, Media Rights, and Post-Season Football"), stat = "identity", position = "dodge", width = 0.8) +
+  #scale_fill_manual(values = c("Total Expenses" = "blue", "NCAA/Conference Distributions, Media Rights, and Post-Season Football" = "red")) +
+  #labs(title = "Total Expenses vs Media Deals", x= "Schools", y = "Dollars")
+```
+
+```{r}
+#Graph to see trends between government support which counts as revenue and total revenues
+
+plot(fbs_data2$`Institutional/Government Support`[fbs_data2$Year == 2022], fbs_data2$`Total Revenues`[fbs_data2$Year == 2022],
+     main = "Government Support vs Total Revenues 2022",
+     xlab = "Government Support", ylab = "Total Revenues")
+```
+
+
+```{r}
+correlation15 <- cor(fbs_data2$`NCAA/Conference Distributions, Media Rights, and Post-Season Football`, fbs_data2$`Total Expenses`)
+#Print the result
+cat("Correlation coefficient between Total Expenses and Media Rights Distributions:", correlation15, "\n")
+```
+
+```{r}
+correlation16 <- cor(fbs_data2$`Facilities and Equipment`, fbs_data2$`Total Revenues`)
+#Print the result
+cat("Correlation coefficient between Total Revenues and Facilities Spending:", correlation16, "\n")
+```
+```{r}
+correlation17 <- cor(fbs_data2$`Corporate Sponsorship, Advertising, Licensing`, fbs_data2$`Total Revenues`)
+
+cat("Correlation coefficient between Total Revenues and Sponsors:", correlation17, "\n")
+```
+
+
+```{r}
+correlation18 <- cor(fbs_data2$`Donor Contributions`, fbs_data2$`Total Revenues`)
+
+cat("Correlation coefficient between Total Revenues and Donors:", correlation18, "\n")
+```
+```{r}
+correlation19 <- cor(fbs_data2$`Ticket Sales`, fbs_data2$`Total Revenues`)
+
+cat("Correlation coefficient between Total Revenues and Ticket Sales:", correlation19, "\n")
+```
+```{r}
+correlation20 <- cor(fbs_data2$`Student Fees`, fbs_data2$`Total Revenues`)
+
+cat("Correlation coefficient between Total Revenues and Student Fees:", correlation20, "\n")
+```
+
+```{r}
+#The revenues splits for the new media deals for the conferences are already reported for 2024, so instead of trying to predict that I will just use these values. This number will be for the column for Media Rights
+fbs_data2 <- fbs_data2 |> 
+  mutate(NewMediaMoney = case_when(
+  NewConference == "ACC" ~ 45000000,
+  NewConference == "Big Ten" ~ 75000000,
+  NewConference == "Big 12" ~ 50000000,
+  NewConference == "SEC" ~ 70000000,
+  NewConference == "Pac 12" ~ 5000000
+))
+```
+
+```{r}
+#Group schools together based on proximity to schools in their new conferences to help measure how much travel expenses are going to increase for schools and then create a new column for the percentage increase in travel expenses for the upcoming year. This increase can't be based off previous years for schools because the travel will be dramatically different. I am basing these increases off of how much travel expenses increased for schools that switched conferences in 2012. 
+
+smallest_increase <- c("Auburn University", "Louisiana State University and Agricultural & Mechanical College", "Mississippi State University", "Texas A & M University", "The University of Alabama", "The University of Tennessee", "University of Arkansas", "University of Florida", "University of Georgia", "University of Kentucky", "University of Mississippi", "University of Missouri-Columbia", "University of South Carolina")
+
+small_increase <- c("Clemson University", "Florida State University", "Georgia Institute of Technology", "North Carolina State University at Raleigh", "University of Louisville", "University of North Carolina at Chapel Hill", "University of Virginia", "Virginia Polytechnic Institute and State University")
+
+lowmedium_increase <- c("Indiana University-Bloomington", "Michigan State University", "Pennsylvania State University", "Purdue University", "The Ohio State University", "University of Illinois Urbana-Champaign", "University of Iowa", "University of Michigan", "University of Minnesota-Twin Cities", "University of Nebraska-Lincoln", "University of Wisconsin-Madison", "Iowa State University", "Kansas State University", "Oklahoma State University", "Texas Tech University", "University of Houston", "University of Kansas")
+
+moderate_increase <- c("Rutgers, The State University of New Jersey-New Brunswick", "University of Maryland-College Park", "The University of Texas at Austin", "University of Oklahoma", "University of Colorado Boulder")
+
+medium_increase <- c("Arizona State University", "University of Arizona", "University of Utah", "West Virginia University")
+
+large_increase <- c("University of Oregon", "University of Washington", "University of California-Los Angeles")
+
+larger_increase <- c("University of Central Florida", "University of Cincinnati")
+
+largest_increase <- c("University of California-Berkeley")
+
+fbs_data2 <- fbs_data2 |> 
+  mutate(TravelExpenseIncreases = case_when(
+  Data %in% smallest_increase ~ 1.20,
+  Data %in% small_increase ~ 1.25, 
+  Data %in% lowmedium_increase ~ 1.30,
+  Data %in% moderate_increase ~ 1.35, 
+  Data %in% medium_increase ~ 1.40,
+  Data %in% large_increase ~ 1.65,
+  Data %in% larger_increase ~ 1.70, 
+  Data %in% largest_increase ~ 1.80
+))
+
+```
+
+
+```{r}
+training_data <- fbs_data2 %>%
+  filter(Year < 2019)
+
+test_data <- fbs_data2 %>%
+  filter(Year >= 2019)
+```
+
+```{r}
+#Identify each school by using unique
+unique_school <- unique(training_data$Data)
+
+#create an empty data frame for predictions
+predictions <- data.frame()
+
+#Loop through each school and build a total revenue prediction for each school for 2024
+for (data_value in unique_school) {
+  train_subset_data <- training_data[training_data$Data == data_value, ]
+  #Build a predictive model for the training data
+  model1 <- lm(`Total Revenues` ~ `NCAA/Conference Distributions, Media Rights, and Post-Season Football` + `Ticket Sales`, data = train_subset_data)
+  #Filter the test data
+  test_subset_data <- test_data[test_data$Data == data_value, ]
+  #Make predictions for the test data and append the predictions to the new data frame created
+  test_subset_data$predicted_value <- predict(model1, newdata = test_subset_data)
+  predictions <- rbind(predictions, test_subset_data)
+}
+
+print(predictions)
+
+```
+
