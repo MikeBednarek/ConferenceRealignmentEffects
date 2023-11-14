@@ -29,8 +29,15 @@ library(tidyverse)
 I imported the dataset from my files in R and renamed it as fbs_data2 to use it.
 ```{r}
 #rename the data set
+
 fbs_data2 <- DA401_Data_bs_data
 ```
+
+```{r}
+#fbs_data1 <- "DA401 Data bs_data.csv"
+#fbs_data3 <- read.csv(fbs_data1)
+```
+
 
 ## Cleaning Data
 To run correlations I had to delete all rows that had NAs present in the data. Every school didn't have Total Academic Spending available for 2022 so I deleted that column since I wasn't it needed for my analysis. Then I could keep the 2022 rows since if I got rid of the rows with NAs all 2022 data would've been lost. 
