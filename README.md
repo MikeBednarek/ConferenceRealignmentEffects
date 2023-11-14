@@ -7,7 +7,6 @@ To run this project all that is needed is the newest version of R and the packag
 # Data 
 The first data set comes from a collabration between the Knight Commission on Intercollegiate Athletics and the Syracuse University Newhouse School of Public Communications (https://knightnewhousedata.org/fbs). This data gives an expense report for all public Division 1 universities from 2005-2022. Some key variables for expenses include: coaches compensation, facilities, travel,and athletic student aid. Some key variables for revenue include: institutional support, media rights, donor contributions, corporate sponsorship, and ticket sales. 
 Football Bowl Subdivision | College Athletics Database. Knight-Newhouse College Athletics Database. (n.d.). https://knightnewhousedata.org/fbs
-The next set of data comes from collegefactual.com which has a revenue vs expense bar graph for each sport offered at public Division 1 universities from 2022. It also provides average head and assistant coach salary for each athletic department and breaks down expenses by gender as well. 
-College search. College Factual. (2023, March 10). https://www.collegefactual.com/colleges/ 
+This data was multiple excel files that were combined into a csv file that was used for analysis. That file is above and is called fbs_data.csv 
 # Contact Info
 My name is Mike Bednarek and I am a senior at Denison University and a Data Analytics & Economics double major. I can be reached at bednar_m2@denison.edu or 773-332-5061.
